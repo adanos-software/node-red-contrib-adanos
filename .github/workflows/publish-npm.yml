@@ -1,0 +1,92 @@
+name: Publish to npm
+
+on:
+  release:
+    types:
+      - published
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git ref to publish (for example v0.1.0)"
+        required: true
+        type: string
+
+concurrency:
+  group: publish-npm-${{ github.event.inputs.ref || github.event.release.tag_name || github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.inputs.ref || github.event.release.tag_name }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          registry-url: "https://registry.npmjs.org"
+          cache: "npm"
+
+      - name: Verify release version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          TAG="${{ github.event.inputs.ref || github.event.release.tag_name }}"
+          if ! printf '%s' "$TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+'; then
+            echo "Release tag must use SemVer and start with v. Got: $TAG"
+            exit 1
+          fi
+          if [ "${TAG#v}" != "$VERSION" ]; then
+            echo "Release tag version (${TAG#v}) does not match package version ($VERSION)."
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run checks
+        run: npm run check
+
+      - name: Upgrade npm for trusted publishing
+        run: |
+          npm install -g npm@11.5.1
+          npm --version
+
+      - name: Pack package
+        id: pack
+        run: |
+          TARBALL=$(npm pack --json | node -e "const chunks=[];process.stdin.on('data',d=>chunks.push(d));process.stdin.on('end',()=>{const parsed=JSON.parse(Buffer.concat(chunks).toString('utf8'));process.stdout.write(parsed[0].filename);});")
+          echo "tarball=$TARBALL" >> "$GITHUB_OUTPUT"
+
+      - name: Smoke install packed nodes
+        run: |
+          SMOKE_DIR=$(mktemp -d /tmp/adanos-node-red-release-smoke.XXXXXX)
+          cd "$SMOKE_DIR"
+          npm init -y >/dev/null 2>&1
+          npm install "${GITHUB_WORKSPACE}/${{ steps.pack.outputs.tarball }}" --omit=dev
+          node <<'EOF'
+          const fs = require("node:fs");
+          const path = require("node:path");
+
+          const packagePath = require.resolve("@adanos/node-red-contrib-adanos/package.json");
+          const packageRoot = path.dirname(packagePath);
+          const metadata = JSON.parse(fs.readFileSync(packagePath, "utf8"));
+          const nodeFile = path.join(packageRoot, metadata["node-red"].nodes.adanos);
+          if (typeof require(nodeFile) !== "function") {
+            throw new Error("Node-RED runtime module did not export a registration function");
+          }
+          EOF
+
+      - name: Publish package to npm
+        env:
+          NODE_AUTH_TOKEN: ""
+        run: |
+          unset NODE_AUTH_TOKEN
+          npm publish --access public --provenance
