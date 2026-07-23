@@ -4,10 +4,10 @@ Use the [Adanos Market Sentiment API](https://api.adanos.org/docs) in Node-RED f
 
 ## Install
 
-Install from the Node-RED Palette Manager by searching for `@adanos/node-red-contrib-adanos`, or run this command in the Node-RED user directory:
+Install from the Node-RED Palette Manager by searching for `node-red-contrib-adanos`, or run this command in the Node-RED user directory:
 
 ```bash
-npm install @adanos/node-red-contrib-adanos
+npm install node-red-contrib-adanos
 ```
 
 Node.js 18 or newer and Node-RED 4 or newer are required.
@@ -70,7 +70,7 @@ Errors are passed to Node-RED's standard error handling, so a Catch node can rou
 
 ## Example flow
 
-Open **Import → Examples → @adanos/node-red-contrib-adanos → Adanos market sentiment** after installation. Configure its **Adanos API** credential before deploying.
+Open **Import → Examples → node-red-contrib-adanos → Adanos market sentiment** after installation. Configure its **Adanos API** credential before deploying.
 
 ## Development
 
