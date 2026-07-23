@@ -1,40 +1,11 @@
 <script type="text/javascript">
   (function () {
-    const BRAND_COLOR = "#4f8f86";
-    const ICON = "adanos.svg";
-
-    function commonDefaults(extra) {
-      return Object.assign({
-        name: { value: "" },
-        connection: { value: "", type: "adanos-config", required: true },
-        from: { value: "" },
-        to: { value: "" },
-        days: { value: "" },
-      }, extra);
-    }
-
     function prepareTypedInput(selector, typeSelector, types) {
       $(selector).typedInput({
         default: types[0],
         typeField: $(typeSelector),
         types: types,
       });
-    }
-
-    function nodeDefinition(label, defaults, oneditprepare) {
-      return {
-        category: "Adanos",
-        color: BRAND_COLOR,
-        defaults: defaults,
-        inputs: 1,
-        outputs: 1,
-        icon: ICON,
-        paletteLabel: label,
-        label: function () {
-          return this.name || `Adanos ${label}`;
-        },
-        oneditprepare: oneditprepare,
-      };
     }
 
     RED.nodes.registerType("adanos-config", {
@@ -50,32 +21,64 @@
       },
     });
 
-    RED.nodes.registerType("adanos-stock", nodeDefinition(
-      "stock",
-      commonDefaults({
+    RED.nodes.registerType("adanos-stock", {
+      category: "Adanos",
+      color: "#4f8f86",
+      defaults: {
+        name: { value: "" },
+        connection: { value: "", type: "adanos-config", required: true },
+        from: { value: "" },
+        to: { value: "" },
+        days: { value: "" },
         platform: { value: "reddit", required: true },
         ticker: { value: "ticker", required: true },
         tickerType: { value: "msg" },
-      }),
-      function () {
+      },
+      inputs: 1,
+      outputs: 1,
+      icon: "adanos.svg",
+      paletteLabel: "stock",
+      label: function () {
+        return this.name || "Adanos stock";
+      },
+      oneditprepare: function () {
         prepareTypedInput("#node-input-ticker", "#node-input-tickerType", ["msg", "str", "flow", "global", "env"]);
       },
-    ));
+    });
 
-    RED.nodes.registerType("adanos-crypto", nodeDefinition(
-      "crypto",
-      commonDefaults({
+    RED.nodes.registerType("adanos-crypto", {
+      category: "Adanos",
+      color: "#4f8f86",
+      defaults: {
+        name: { value: "" },
+        connection: { value: "", type: "adanos-config", required: true },
+        from: { value: "" },
+        to: { value: "" },
+        days: { value: "" },
         symbol: { value: "symbol", required: true },
         symbolType: { value: "msg" },
-      }),
-      function () {
+      },
+      inputs: 1,
+      outputs: 1,
+      icon: "adanos.svg",
+      paletteLabel: "crypto",
+      label: function () {
+        return this.name || "Adanos crypto";
+      },
+      oneditprepare: function () {
         prepareTypedInput("#node-input-symbol", "#node-input-symbolType", ["msg", "str", "flow", "global", "env"]);
       },
-    ));
+    });
 
-    RED.nodes.registerType("adanos-trending", nodeDefinition(
-      "trending",
-      commonDefaults({
+    RED.nodes.registerType("adanos-trending", {
+      category: "Adanos",
+      color: "#4f8f86",
+      defaults: {
+        name: { value: "" },
+        connection: { value: "", type: "adanos-config", required: true },
+        from: { value: "" },
+        to: { value: "" },
+        days: { value: "" },
         market: { value: "reddit", required: true },
         limit: {
           value: 10,
@@ -87,20 +90,40 @@
           required: true,
           validate: RED.validators.number(),
         },
-      }),
-    ));
+      },
+      inputs: 1,
+      outputs: 1,
+      icon: "adanos.svg",
+      paletteLabel: "trending",
+      label: function () {
+        return this.name || "Adanos trending";
+      },
+    });
 
-    RED.nodes.registerType("adanos-compare", nodeDefinition(
-      "compare",
-      commonDefaults({
+    RED.nodes.registerType("adanos-compare", {
+      category: "Adanos",
+      color: "#4f8f86",
+      defaults: {
+        name: { value: "" },
+        connection: { value: "", type: "adanos-config", required: true },
+        from: { value: "" },
+        to: { value: "" },
+        days: { value: "" },
         market: { value: "reddit", required: true },
         assets: { value: "ticker", required: true },
         assetsType: { value: "msg" },
-      }),
-      function () {
+      },
+      inputs: 1,
+      outputs: 1,
+      icon: "adanos.svg",
+      paletteLabel: "compare",
+      label: function () {
+        return this.name || "Adanos compare";
+      },
+      oneditprepare: function () {
         prepareTypedInput("#node-input-assets", "#node-input-assetsType", ["msg", "str", "json", "flow", "global", "env"]);
       },
-    ));
+    });
   }());
 </script>
 
