@@ -1,0 +1,293 @@
+<script type="text/javascript">
+  (function () {
+    const BRAND_COLOR = "#4f8f86";
+    const ICON = "adanos.svg";
+
+    function commonDefaults(extra) {
+      return Object.assign({
+        name: { value: "" },
+        connection: { value: "", type: "adanos-config", required: true },
+        from: { value: "" },
+        to: { value: "" },
+        days: { value: "" },
+      }, extra);
+    }
+
+    function prepareTypedInput(selector, typeSelector, types) {
+      $(selector).typedInput({
+        default: types[0],
+        typeField: $(typeSelector),
+        types: types,
+      });
+    }
+
+    function nodeDefinition(label, defaults, oneditprepare) {
+      return {
+        category: "Adanos",
+        color: BRAND_COLOR,
+        defaults: defaults,
+        inputs: 1,
+        outputs: 1,
+        icon: ICON,
+        paletteLabel: label,
+        label: function () {
+          return this.name || `Adanos ${label}`;
+        },
+        oneditprepare: oneditprepare,
+      };
+    }
+
+    RED.nodes.registerType("adanos-config", {
+      category: "config",
+      defaults: {
+        name: { value: "Adanos API" },
+      },
+      credentials: {
+        apiKey: { type: "password", required: true },
+      },
+      label: function () {
+        return this.name || "Adanos API";
+      },
+    });
+
+    RED.nodes.registerType("adanos-stock", nodeDefinition(
+      "stock",
+      commonDefaults({
+        platform: { value: "reddit", required: true },
+        ticker: { value: "ticker", required: true },
+        tickerType: { value: "msg" },
+      }),
+      function () {
+        prepareTypedInput("#node-input-ticker", "#node-input-tickerType", ["msg", "str", "flow", "global", "env"]);
+      },
+    ));
+
+    RED.nodes.registerType("adanos-crypto", nodeDefinition(
+      "crypto",
+      commonDefaults({
+        symbol: { value: "symbol", required: true },
+        symbolType: { value: "msg" },
+      }),
+      function () {
+        prepareTypedInput("#node-input-symbol", "#node-input-symbolType", ["msg", "str", "flow", "global", "env"]);
+      },
+    ));
+
+    RED.nodes.registerType("adanos-trending", nodeDefinition(
+      "trending",
+      commonDefaults({
+        market: { value: "reddit", required: true },
+        limit: {
+          value: 10,
+          required: true,
+          validate: RED.validators.number(),
+        },
+        offset: {
+          value: 0,
+          required: true,
+          validate: RED.validators.number(),
+        },
+      }),
+    ));
+
+    RED.nodes.registerType("adanos-compare", nodeDefinition(
+      "compare",
+      commonDefaults({
+        market: { value: "reddit", required: true },
+        assets: { value: "ticker", required: true },
+        assetsType: { value: "msg" },
+      }),
+      function () {
+        prepareTypedInput("#node-input-assets", "#node-input-assetsType", ["msg", "str", "json", "flow", "global", "env"]);
+      },
+    ));
+  }());
+</script>
+
+<script type="text/html" data-template-name="adanos-config">
+  <div class="form-row">
+    <label for="node-config-input-name"><i class="fa fa-tag"></i> Name</label>
+    <input type="text" id="node-config-input-name" placeholder="Adanos API">
+  </div>
+  <div class="form-row">
+    <label for="node-config-input-apiKey"><i class="fa fa-key"></i> API key</label>
+    <input type="password" id="node-config-input-apiKey" autocomplete="off">
+  </div>
+</script>
+
+<script type="text/html" data-help-name="adanos-config">
+  <p>Stores the API key used by Adanos nodes. Node-RED keeps credentials separate from exported flows.</p>
+  <p>Create an API key at <a href="https://adanos.org" target="_blank" rel="noopener noreferrer">adanos.org</a>.</p>
+</script>
+
+<script type="text/html" data-template-name="adanos-stock">
+  <div class="form-row">
+    <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+    <input type="text" id="node-input-name" placeholder="Optional">
+  </div>
+  <div class="form-row">
+    <label for="node-input-connection"><i class="fa fa-key"></i> API</label>
+    <input type="text" id="node-input-connection">
+  </div>
+  <div class="form-row">
+    <label for="node-input-platform"><i class="fa fa-database"></i> Platform</label>
+    <select id="node-input-platform">
+      <option value="reddit">Reddit Stocks</option>
+      <option value="news">News</option>
+      <option value="x">X / Twitter</option>
+      <option value="polymarket">Polymarket</option>
+    </select>
+  </div>
+  <div class="form-row">
+    <label for="node-input-ticker"><i class="fa fa-line-chart"></i> Ticker</label>
+    <input type="text" id="node-input-ticker">
+    <input type="hidden" id="node-input-tickerType">
+  </div>
+  <div class="form-row">
+    <label for="node-input-from"><i class="fa fa-calendar"></i> From</label>
+    <input type="date" id="node-input-from" placeholder="YYYY-MM-DD">
+  </div>
+  <div class="form-row">
+    <label for="node-input-to"><i class="fa fa-calendar"></i> To</label>
+    <input type="date" id="node-input-to" placeholder="YYYY-MM-DD">
+  </div>
+  <div class="form-row">
+    <label for="node-input-days"><i class="fa fa-clock-o"></i> Days</label>
+    <input type="number" id="node-input-days" min="1" step="1" placeholder="API default">
+  </div>
+</script>
+
+<script type="text/html" data-help-name="adanos-stock">
+  <p>Gets a detailed stock sentiment result from Reddit, News, X, or Polymarket.</p>
+  <h3>Input</h3>
+  <p>The ticker comes from the configured typed input. Optional request overrides belong in <code>msg.adanos</code>.</p>
+  <h3>Output</h3>
+  <p>Sets the API response on <code>msg.payload</code>. If <code>msg.topic</code> is empty, the node sets an Adanos operation topic.</p>
+  <h3>Period</h3>
+  <p>Use an explicit <code>from</code>/<code>to</code> window or <code>days</code>. Do not combine <code>from</code> with <code>days</code>.</p>
+</script>
+
+<script type="text/html" data-template-name="adanos-crypto">
+  <div class="form-row">
+    <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+    <input type="text" id="node-input-name" placeholder="Optional">
+  </div>
+  <div class="form-row">
+    <label for="node-input-connection"><i class="fa fa-key"></i> API</label>
+    <input type="text" id="node-input-connection">
+  </div>
+  <div class="form-row">
+    <label for="node-input-symbol"><i class="fa fa-line-chart"></i> Symbol</label>
+    <input type="text" id="node-input-symbol">
+    <input type="hidden" id="node-input-symbolType">
+  </div>
+  <div class="form-row">
+    <label for="node-input-from"><i class="fa fa-calendar"></i> From</label>
+    <input type="date" id="node-input-from" placeholder="YYYY-MM-DD">
+  </div>
+  <div class="form-row">
+    <label for="node-input-to"><i class="fa fa-calendar"></i> To</label>
+    <input type="date" id="node-input-to" placeholder="YYYY-MM-DD">
+  </div>
+  <div class="form-row">
+    <label for="node-input-days"><i class="fa fa-clock-o"></i> Days</label>
+    <input type="number" id="node-input-days" min="1" step="1" placeholder="API default">
+  </div>
+</script>
+
+<script type="text/html" data-help-name="adanos-crypto">
+  <p>Gets detailed Reddit sentiment for a crypto token.</p>
+  <p>The symbol comes from the configured typed input. The API response is written to <code>msg.payload</code>.</p>
+  <p>Optional <code>msg.adanos.from</code>, <code>to</code>, or <code>days</code> values override the node settings.</p>
+</script>
+
+<script type="text/html" data-template-name="adanos-trending">
+  <div class="form-row">
+    <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+    <input type="text" id="node-input-name" placeholder="Optional">
+  </div>
+  <div class="form-row">
+    <label for="node-input-connection"><i class="fa fa-key"></i> API</label>
+    <input type="text" id="node-input-connection">
+  </div>
+  <div class="form-row">
+    <label for="node-input-market"><i class="fa fa-database"></i> Market</label>
+    <select id="node-input-market">
+      <option value="reddit">Reddit Stocks</option>
+      <option value="news">News</option>
+      <option value="x">X / Twitter</option>
+      <option value="polymarket">Polymarket</option>
+      <option value="crypto">Reddit Crypto</option>
+    </select>
+  </div>
+  <div class="form-row">
+    <label for="node-input-limit"><i class="fa fa-list-ol"></i> Limit</label>
+    <input type="number" id="node-input-limit" min="1" step="1">
+  </div>
+  <div class="form-row">
+    <label for="node-input-offset"><i class="fa fa-forward"></i> Offset</label>
+    <input type="number" id="node-input-offset" min="0" step="1">
+  </div>
+  <div class="form-row">
+    <label for="node-input-from"><i class="fa fa-calendar"></i> From</label>
+    <input type="date" id="node-input-from" placeholder="YYYY-MM-DD">
+  </div>
+  <div class="form-row">
+    <label for="node-input-to"><i class="fa fa-calendar"></i> To</label>
+    <input type="date" id="node-input-to" placeholder="YYYY-MM-DD">
+  </div>
+  <div class="form-row">
+    <label for="node-input-days"><i class="fa fa-clock-o"></i> Days</label>
+    <input type="number" id="node-input-days" min="1" step="1" placeholder="API default">
+  </div>
+</script>
+
+<script type="text/html" data-help-name="adanos-trending">
+  <p>Returns trending stocks or crypto tokens for the selected market.</p>
+  <p>Use <code>msg.adanos</code> to override <code>from</code>, <code>to</code>, <code>days</code>, <code>limit</code>, or <code>offset</code>. News also accepts <code>source</code>; Polymarket accepts <code>type</code>.</p>
+  <p>The API response is written to <code>msg.payload</code>.</p>
+</script>
+
+<script type="text/html" data-template-name="adanos-compare">
+  <div class="form-row">
+    <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+    <input type="text" id="node-input-name" placeholder="Optional">
+  </div>
+  <div class="form-row">
+    <label for="node-input-connection"><i class="fa fa-key"></i> API</label>
+    <input type="text" id="node-input-connection">
+  </div>
+  <div class="form-row">
+    <label for="node-input-market"><i class="fa fa-database"></i> Market</label>
+    <select id="node-input-market">
+      <option value="reddit">Reddit Stocks</option>
+      <option value="news">News</option>
+      <option value="x">X / Twitter</option>
+      <option value="polymarket">Polymarket</option>
+      <option value="crypto">Reddit Crypto</option>
+    </select>
+  </div>
+  <div class="form-row">
+    <label for="node-input-assets"><i class="fa fa-exchange"></i> Assets</label>
+    <input type="text" id="node-input-assets">
+    <input type="hidden" id="node-input-assetsType">
+  </div>
+  <div class="form-row">
+    <label for="node-input-from"><i class="fa fa-calendar"></i> From</label>
+    <input type="date" id="node-input-from" placeholder="YYYY-MM-DD">
+  </div>
+  <div class="form-row">
+    <label for="node-input-to"><i class="fa fa-calendar"></i> To</label>
+    <input type="date" id="node-input-to" placeholder="YYYY-MM-DD">
+  </div>
+  <div class="form-row">
+    <label for="node-input-days"><i class="fa fa-clock-o"></i> Days</label>
+    <input type="number" id="node-input-days" min="1" step="1" placeholder="API default">
+  </div>
+</script>
+
+<script type="text/html" data-help-name="adanos-compare">
+  <p>Compares up to 10 stock tickers or crypto symbols in one request.</p>
+  <p>Assets may be an array or a comma-separated string, supplied by the configured typed input. The API response is written to <code>msg.payload</code>.</p>
+  <p>Optional <code>msg.adanos.from</code>, <code>to</code>, or <code>days</code> values override the node settings.</p>
+</script>

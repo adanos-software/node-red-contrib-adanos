@@ -1,0 +1,58 @@
+{
+  "name": "@adanos/node-red-contrib-adanos",
+  "version": "0.1.0",
+  "description": "Node-RED nodes for Adanos stock and crypto market sentiment",
+  "license": "MIT",
+  "author": "Alexander Schneider",
+  "homepage": "https://adanos.org",
+  "bugs": {
+    "url": "https://github.com/adanos-software/node-red-contrib-adanos/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/adanos-software/node-red-contrib-adanos.git"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "nodes",
+    "lib",
+    "examples",
+    "CHANGELOG.md",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node --test",
+    "test:coverage": "node --test --experimental-test-coverage",
+    "check:syntax": "node --check nodes/adanos.js && node --check lib/register-nodes.js",
+    "check": "npm run check:syntax && npm test && npm pack --dry-run"
+  },
+  "dependencies": {
+    "finance-sentiment": "^2.6.0"
+  },
+  "devDependencies": {
+    "node-red": "^4.1.11",
+    "node-red-node-test-helper": "^0.3.6"
+  },
+  "keywords": [
+    "node-red",
+    "adanos",
+    "stocks",
+    "crypto",
+    "sentiment",
+    "trending",
+    "finance"
+  ],
+  "node-red": {
+    "version": ">=4.0.0",
+    "nodes": {
+      "adanos": "nodes/adanos.js"
+    }
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}
